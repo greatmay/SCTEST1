@@ -60,8 +60,9 @@ class WebAppInterface(private val context: Context) {
 class MainActivity : AppCompatActivity() {
     /*
 Declare the native method to call C++ code*/
-external fun processJsonFromCPlusPlus(jsonString: String): String
-external fun helloFromCpp(): String
+external fun processJsonFromCPlusPlus(jsonString: String,key: String): String
+external fun processJsonFromCPlusPlus_byPath(jsonString: String,pathObject: String): String
+external fun helloFromCpp(): String // for test JNI
 
     // Load the native library
    companion object {
@@ -84,59 +85,57 @@ external fun helloFromCpp(): String
             // Show an alert dialog with just an OK button
             val builder = AlertDialog.Builder(this)
             webView.evaluateJavascript("SC_INTERFACE.device_info()") { jsonString ->
-              Log.d("WebView", "Received JSON: $jsonString")
+                Log.d("WebView", "Received JSON: $jsonString")
 
                 val cleanJsonString = jsonString
                     .replace("\\\"", "\"") // Remove backslashes
                     .trim('"')  // Remove outer quotes
 
-                ///Parsing the JSON
-                try {
-                    val jsonObject = JSONObject(cleanJsonString)
-                    val appver = jsonObject.getString("app_version")
-                    val pakname = jsonObject.getString("package_name")
-                    val srcwidth =jsonObject.getString("screen_width")
-                    val srcheight =jsonObject.getString("screen_height")
-                    val manufac =jsonObject.getString("device_manufacturer")
-                    val modeldev =jsonObject.getString("device_model")
-                    val natobj = jsonObject.getJSONObject("native_info")
-                    val kerver = natobj.getString("kernel_version")
-                    val coreobj = natobj.getJSONObject("cpu_info")
-                    val coreval = coreobj.getString("cpu_cores")
-                    val corefrq = coreobj.getString("cpu_freq")
-                    val ramusage =natobj.getString("ram_total")
-                    val apphead = Html.fromHtml("<b>App info:</b>",Html.FROM_HTML_MODE_LEGACY)
-                    val pakhead = Html.fromHtml("<b>Package:</b>",Html.FROM_HTML_MODE_LEGACY)
-                    val srchead = Html.fromHtml("<b> Screen Info:</b>", Html.FROM_HTML_MODE_LEGACY)
-                    val wdhead = Html.fromHtml("<b> Width:</b>", Html.FROM_HTML_MODE_LEGACY)
-                    val hihead = Html.fromHtml("<b> Height:</b>", Html.FROM_HTML_MODE_LEGACY)
-                    val devhead = Html.fromHtml("<b> Device Info:</b>", Html.FROM_HTML_MODE_LEGACY)
-                    val manuhead = Html.fromHtml("<b>Manufacturer:</b>", Html.FROM_HTML_MODE_LEGACY)
-                    val modelhead =Html.fromHtml("<b>Model:</b>", Html.FROM_HTML_MODE_LEGACY)
-                    val cpuinfohd =Html.fromHtml("<b>CPU Info:</b>", Html.FROM_HTML_MODE_LEGACY)
-                    val corehd =Html.fromHtml("<b>Cores:</b>", Html.FROM_HTML_MODE_LEGACY)
-                    val frqhd =Html.fromHtml("<b>Frequency:</b>", Html.FROM_HTML_MODE_LEGACY)
-                    val sysinhd =Html.fromHtml("<b>System info:</b>", Html.FROM_HTML_MODE_LEGACY)
-                    val ramtotal =Html.fromHtml("<b>RAM Total:</b>", Html.FROM_HTML_MODE_LEGACY)
-                    val kerlverhd =Html.fromHtml("<b>Kernel Version:</b>", Html.FROM_HTML_MODE_LEGACY)
-                    val alldata = Html.fromHtml("$apphead<br>Version $appver<br>$pakhead$pakname<br><br>$srchead<br>$wdhead $srcwidth px" +
+                val appver = processJsonFromCPlusPlus(cleanJsonString, "app_version")
+                val pakname = processJsonFromCPlusPlus(cleanJsonString, "package_name")
+                val srcwidth = processJsonFromCPlusPlus(cleanJsonString, "screen_width")
+                val srcheight = processJsonFromCPlusPlus(cleanJsonString, "screen_height")
+                val manufac = processJsonFromCPlusPlus(cleanJsonString, "device_manufacturer")
+                val modeldev = processJsonFromCPlusPlus(cleanJsonString, "device_model")
+                val kerver =
+                    processJsonFromCPlusPlus_byPath(cleanJsonString, "native_info.kernel_version")
+                val coreval = processJsonFromCPlusPlus_byPath(
+                    cleanJsonString,
+                    "native_info.cpu_info.cpu_cores"
+                )
+                val corefrq = processJsonFromCPlusPlus_byPath(
+                    cleanJsonString,
+                    "native_info.cpu_info.cpu_freq"
+                )
+                var ramusage = processJsonFromCPlusPlus_byPath(cleanJsonString, "native_info.ram_total")
+                val apphead = Html.fromHtml("<b>App info:</b>", Html.FROM_HTML_MODE_LEGACY)
+                val pakhead = Html.fromHtml("<b>Package:</b>", Html.FROM_HTML_MODE_LEGACY)
+                val srchead = Html.fromHtml("<b> Screen Info:</b>", Html.FROM_HTML_MODE_LEGACY)
+                val wdhead = Html.fromHtml("<b> Width:</b>", Html.FROM_HTML_MODE_LEGACY)
+                val hihead = Html.fromHtml("<b> Height:</b>", Html.FROM_HTML_MODE_LEGACY)
+                val devhead = Html.fromHtml("<b> Device Info:</b>", Html.FROM_HTML_MODE_LEGACY)
+                val manuhead = Html.fromHtml("<b>Manufacturer:</b>", Html.FROM_HTML_MODE_LEGACY)
+                val modelhead = Html.fromHtml("<b>Model:</b>", Html.FROM_HTML_MODE_LEGACY)
+                val cpuinfohd = Html.fromHtml("<b>CPU Info:</b>", Html.FROM_HTML_MODE_LEGACY)
+                val corehd = Html.fromHtml("<b>Cores:</b>", Html.FROM_HTML_MODE_LEGACY)
+                val frqhd = Html.fromHtml("<b>Frequency:</b>", Html.FROM_HTML_MODE_LEGACY)
+                val sysinhd = Html.fromHtml("<b>System info:</b>", Html.FROM_HTML_MODE_LEGACY)
+                val ramtotal = Html.fromHtml("<b>RAM Total:</b>", Html.FROM_HTML_MODE_LEGACY)
+                val kerlverhd = Html.fromHtml("<b>Kernel Version:</b>", Html.FROM_HTML_MODE_LEGACY)
+                val alldata = Html.fromHtml(
+                    "$apphead<br>Version $appver<br>$pakhead$pakname<br><br>$srchead<br>$wdhead $srcwidth px" +
                             "<br>$hihead $srcheight px<br><br>$devhead <br>$manuhead $manufac<br>$modelhead $modeldev" +
                             "<br><br>$cpuinfohd<br>$corehd $coreval <br>$frqhd $corefrq MHz <br><br>$sysinhd" +
-                            "<br>$ramtotal $ramusage byte<br> $kerlverhd $kerver",Html.FROM_HTML_MODE_LEGACY)
-                    builder.setMessage(alldata)
-                        .setTitle("Device Information")
-                        .setPositiveButton("CLOSE") { dialog, id ->
-                            // Handle the OK button click if needed
-                        }
-                    builder.create().show()
-
-                  Toast.makeText(this,  helloFromCpp(), Toast.LENGTH_LONG).show()
-                } catch (e: JSONException) {
-                    e.printStackTrace()
-                    Toast.makeText(this, Log.getStackTraceString(e), Toast.LENGTH_SHORT).show()
-                }
+                            "<br>$ramtotal $ramusage byte<br> $kerlverhd $kerver",
+                    Html.FROM_HTML_MODE_LEGACY
+                )
+                builder.setMessage(alldata)
+                    .setTitle("Device Information")
+                    .setPositiveButton("CLOSE") { dialog, id ->
+                        // Handle the OK button click if needed
+                    }
+                builder.create().show()
             }
-
         }
         screenshot.setOnClickListener{
             webView.evaluateJavascript(/* script = */ "SC_INTERFACE.take_screenshot('handleScreenshot')"){result ->
