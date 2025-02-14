@@ -2,6 +2,7 @@ package com.example.javasb
 
 import android.content.Context
 import android.os.Bundle
+import android.text.Html
 import android.util.Log
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
@@ -29,8 +30,28 @@ class WebAppInterface(private val context: Context) {
 
     @JavascriptInterface
     fun device_info():String{
+      //simulate json string
+      return buildString {
+          append("{\"app_version\":\"1.0\",")
+          append("\"package_name\": \"io.screencloud.assignment.android_sen\",")
+          append("\"screen_width\": 2560,")
+          append("\"screen_height\": 1688,")
+          append("\"screen_density\": 2,")
+          append("\"android_version\": 30,")
+          append("\"device_manufacturer\": \"Genymobile\",")
+          append("\"device_model\": \"Pixel C\",")
+          append("\"native_info\": {")
+          append("\"ram_total\": \"3148120064\",")
+          append("\"cpu_info\": {")
+          append("\"cpu_cores\": \"3\",")
+          append("\"cpu_freq\": \"3072.000\" ")
+          append(" },")
+          append("\"kernel_version\":11,")
+          append("\"build_fingerprint\": \"google/vbox86p/vbox86p:11/RQ\",")
+          append("\"hardware_serial\": \"vbox86\"")
+          append(" } }")
+      }
 
-      return "{\"app_version\":1}"
     }
 
 }
@@ -69,11 +90,41 @@ external fun helloFromCpp(): String
                     .replace("\\\"", "\"") // Remove backslashes
                     .trim('"')  // Remove outer quotes
 
-                // Parsing the JSON
+                ///Parsing the JSON
                 try {
                     val jsonObject = JSONObject(cleanJsonString)
-                    val message = jsonObject.getString("app_version")
-                    builder.setMessage(message)
+                    val appver = jsonObject.getString("app_version")
+                    val pakname = jsonObject.getString("package_name")
+                    val srcwidth =jsonObject.getString("screen_width")
+                    val srcheight =jsonObject.getString("screen_height")
+                    val manufac =jsonObject.getString("device_manufacturer")
+                    val modeldev =jsonObject.getString("device_model")
+                    val natobj = jsonObject.getJSONObject("native_info")
+                    val kerver = natobj.getString("kernel_version")
+                    val coreobj = natobj.getJSONObject("cpu_info")
+                    val coreval = coreobj.getString("cpu_cores")
+                    val corefrq = coreobj.getString("cpu_freq")
+                    val ramusage =natobj.getString("ram_total")
+                    val apphead = Html.fromHtml("<b>App info:</b>",Html.FROM_HTML_MODE_LEGACY)
+                    val pakhead = Html.fromHtml("<b>Package:</b>",Html.FROM_HTML_MODE_LEGACY)
+                    val srchead = Html.fromHtml("<b> Screen Info:</b>", Html.FROM_HTML_MODE_LEGACY)
+                    val wdhead = Html.fromHtml("<b> Width:</b>", Html.FROM_HTML_MODE_LEGACY)
+                    val hihead = Html.fromHtml("<b> Height:</b>", Html.FROM_HTML_MODE_LEGACY)
+                    val devhead = Html.fromHtml("<b> Device Info:</b>", Html.FROM_HTML_MODE_LEGACY)
+                    val manuhead = Html.fromHtml("<b>Manufacturer:</b>", Html.FROM_HTML_MODE_LEGACY)
+                    val modelhead =Html.fromHtml("<b>Model:</b>", Html.FROM_HTML_MODE_LEGACY)
+                    val cpuinfohd =Html.fromHtml("<b>CPU Info:</b>", Html.FROM_HTML_MODE_LEGACY)
+                    val corehd =Html.fromHtml("<b>Cores:</b>", Html.FROM_HTML_MODE_LEGACY)
+                    val frqhd =Html.fromHtml("<b>Frequency:</b>", Html.FROM_HTML_MODE_LEGACY)
+                    val sysinhd =Html.fromHtml("<b>System info:</b>", Html.FROM_HTML_MODE_LEGACY)
+                    val ramtotal =Html.fromHtml("<b>RAM Total:</b>", Html.FROM_HTML_MODE_LEGACY)
+                    val kerlverhd =Html.fromHtml("<b>Kernel Version:</b>", Html.FROM_HTML_MODE_LEGACY)
+                    val alldata = Html.fromHtml("$apphead<br>Version $appver<br>$pakhead$pakname<br><br>$srchead<br>$wdhead $srcwidth px" +
+                            "<br>$hihead $srcheight px<br><br>$devhead <br>$manuhead $manufac<br>$modelhead $modeldev" +
+                            "<br><br>$cpuinfohd<br>$corehd $coreval <br>$frqhd $corefrq MHz <br><br>$sysinhd" +
+                            "<br>$ramtotal $ramusage byte<br> $kerlverhd $kerver",Html.FROM_HTML_MODE_LEGACY)
+                    builder.setMessage(alldata)
+                        .setTitle("Device Information")
                         .setPositiveButton("CLOSE") { dialog, id ->
                             // Handle the OK button click if needed
                         }
