@@ -1,33 +1,37 @@
 package com.example.javasb
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.os.Bundle
 import android.text.Html
 import android.util.Log
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import android.widget.Button
-import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import org.json.JSONException
-import org.json.JSONObject
+import java.io.ByteArrayOutputStream
+import android.util.Base64
 
-// register name to javascript
+
 class WebAppInterface(private val context: Context) {
     @JavascriptInterface
+    // register name to javascript
     fun get_name(): String {
         return "Thitipong Sornjan"
     }
 
+    //call handleScreenshot callback
     @JavascriptInterface
     fun take_screenshot(callback: String) {
 
     }
 
+    //simulate json from webpage
     @JavascriptInterface
     fun device_info():String{
       //simulate json string
@@ -60,9 +64,9 @@ class WebAppInterface(private val context: Context) {
 class MainActivity : AppCompatActivity() {
     /*
 Declare the native method to call C++ code*/
-external fun processJsonFromCPlusPlus(jsonString: String,key: String): String
-external fun processJsonFromCPlusPlus_byPath(jsonString: String,pathObject: String): String
-external fun helloFromCpp(): String // for test JNI
+private external fun processJsonFromCPlusPlus(jsonString: String,key: String): String
+private external fun processJsonFromCPlusPlusbyPath(jsonString: String,pathObject: String): String
+private external fun helloFromCpp(): String // for test JNI
 
     // Load the native library
    companion object {
@@ -71,15 +75,34 @@ external fun helloFromCpp(): String // for test JNI
      }
    }
 
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
          val webView = findViewById<WebView>(R.id.webView1)
-        true.also { webView.settings.javaScriptEnabled = it }
+        webView.settings.javaScriptEnabled = true
+        webView.settings.allowFileAccess = true
+        webView.settings.allowContentAccess = true
         val device_info = findViewById<Button>(R.id.button1)
         val screenshot = findViewById<Button>(R.id.button2)
         webView.addJavascriptInterface(WebAppInterface(this), "SC_INTERFACE")
+
+        fun captureWebViewScreenshot() {
+            val bitmap = Bitmap.createBitmap(webView.width, webView.height, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(bitmap)
+            webView.draw(canvas)
+
+            // Convert bitmap to JPEG
+            val outputStream = ByteArrayOutputStream()
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 90, outputStream)  // 90 is the quality (0-100)
+
+            // Convert the JPEG to Base64
+            val base64Image = "data:image/jpeg;base64," + Base64.encodeToString(outputStream.toByteArray(), Base64.NO_WRAP)
+
+            // Pass the base64 image to JavaScript for handling
+            webView.evaluateJavascript( "SC_INTERFACE.take_screenshot(handleScreenshot('$base64Image'));",null)
+        }
 
         device_info.setOnClickListener {
             // Show an alert dialog with just an OK button
@@ -98,16 +121,16 @@ external fun helloFromCpp(): String // for test JNI
                 val manufac = processJsonFromCPlusPlus(cleanJsonString, "device_manufacturer")
                 val modeldev = processJsonFromCPlusPlus(cleanJsonString, "device_model")
                 val kerver =
-                    processJsonFromCPlusPlus_byPath(cleanJsonString, "native_info.kernel_version")
-                val coreval = processJsonFromCPlusPlus_byPath(
+                    processJsonFromCPlusPlusbyPath(cleanJsonString, "native_info.kernel_version")
+                val coreval = processJsonFromCPlusPlusbyPath(
                     cleanJsonString,
                     "native_info.cpu_info.cpu_cores"
                 )
-                val corefrq = processJsonFromCPlusPlus_byPath(
+                val corefrq = processJsonFromCPlusPlusbyPath(
                     cleanJsonString,
                     "native_info.cpu_info.cpu_freq"
                 )
-                var ramusage = processJsonFromCPlusPlus_byPath(cleanJsonString, "native_info.ram_total")
+                val ramusage = processJsonFromCPlusPlusbyPath(cleanJsonString, "native_info.ram_total")
                 val apphead = Html.fromHtml("<b>App info:</b>", Html.FROM_HTML_MODE_LEGACY)
                 val pakhead = Html.fromHtml("<b>Package:</b>", Html.FROM_HTML_MODE_LEGACY)
                 val srchead = Html.fromHtml("<b> Screen Info:</b>", Html.FROM_HTML_MODE_LEGACY)
@@ -131,17 +154,17 @@ external fun helloFromCpp(): String // for test JNI
                 )
                 builder.setMessage(alldata)
                     .setTitle("Device Information")
-                    .setPositiveButton("CLOSE") { dialog, id ->
+                    .setPositiveButton("CLOSE") { dialog,_ ->
                         // Handle the OK button click if needed
+                        dialog.dismiss() // Close the dialog
                     }
                 builder.create().show()
             }
         }
+
         screenshot.setOnClickListener{
-            webView.evaluateJavascript(/* script = */ "SC_INTERFACE.take_screenshot('handleScreenshot')"){result ->
-                println("JS Result: $result")
-                Toast.makeText(this, result, Toast.LENGTH_SHORT).show()
-            }
+
+            captureWebViewScreenshot()
 
         }
 
@@ -151,6 +174,7 @@ external fun helloFromCpp(): String // for test JNI
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
+
     }
 
 }

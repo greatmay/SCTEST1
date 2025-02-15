@@ -21,12 +21,6 @@
 #include "json/json.h"  // You can use JSON library like JsonCpp
 
 
-
-  /*Java_com_example_myapp_MainActivity_helloFromNative(JNIEnv* env, jobject) {
-//std::string message = "Hello from Native!";
-//return env->NewStringUTF(message.c_str());
-}*/
-
 extern "C"
 JNIEXPORT jstring JNICALL
 Java_com_example_javasb_MainActivity_helloFromCpp(JNIEnv *env, jobject thiz) {
@@ -109,7 +103,7 @@ std::string getValueByPath(const Json::Value &root, const std::vector<std::strin
 
 extern "C"
 JNIEXPORT jstring JNICALL
-Java_com_example_javasb_MainActivity_processJsonFromCPlusPlus_1byPath(JNIEnv *env, jobject thiz,
+Java_com_example_javasb_MainActivity_processJsonFromCPlusPlusbyPath(JNIEnv *env, jobject thiz,
                                                                       jstring json_string,
                                                                       jstring path_object) {
 
